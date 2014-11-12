@@ -1,6 +1,6 @@
 <?php
 
-namespace Microthread\Models
+namespace Microthread\Models;
 
 trait Entry {
 	
