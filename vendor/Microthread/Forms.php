@@ -396,7 +396,7 @@ class Forms {
 		}
 		$inputs['cxn']['value']	= self::antiXSRF( $form, true );
 		if ( isset( $inputs['captcha'] ) ) {
-			$captcha		= 'Hello';
+			$captcha		= 'Hello'; // Testing for now
 			$_SESSION['captcha']	= $captcha;
 		}
 		
