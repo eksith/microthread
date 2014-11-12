@@ -28,7 +28,7 @@ abstract class Model {
 	/**
 	 * @var array 
 	 */
-	private static $t_count	= array;
+	private static $t_count	= array();
 	
 	/**
 	 * @var object PDO connection.
@@ -104,19 +104,19 @@ abstract class Model {
 		}
 	}
 	
-	private static getConnString( $name ) {
+	private static function getConnString( $name ) {
 		if ( array_key_exists( self::$connstrings ) ) {
 			return self::$connstrings[$name];
 		}
 		return null;
 	}
 	
-	public static setConnString( $dbh, $name = 'default' ) {
+	public static function setConnString( $dbh, $name = 'default' ) {
 		self::$connestrings[$name] = $dbh;
 	}
 	
-	protected static getDbType( $name = 'default' ) {
-		return isset( self::$connections[$name] )? self::$connections[$name][1] : ''
+	protected static function getDbType( $name = 'default' ) {
+		return isset( self::$connections[$name] )? self::$connections[$name][1] : '';
 	}
 	
 	/**
