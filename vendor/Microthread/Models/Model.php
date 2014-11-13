@@ -127,22 +127,26 @@ abstract class Model {
 	 * 
 	 * @param string $sql Database query
 	 * @param array $params Selector parameters in 'column' => 'value' format
-	 * @return object Of the same type as the class calling this or null on failure
-	 * @return mixed Single object or array of the same type as the class calling 
-	 * 	this or null on failure
+	 * @return mixed Object of the same type as the class calling this or null on failure
+	 * 		Single object or array of the same type as the class calling 
+	 * 		this or null on failure
 	 */
 	protected static function find( 
 		$query, 
 		$params, 
-		$fetch = 'class', 
-		$name = 'default'
+		$fetch		= 'class', 
+		$name		= 'default'
 	) {//Incorporate joins
-		if ( is_array( $query ) && isset( $query['fields'] ) && $query['table'] ) {
-				$sql = self::_selectStatement( 
-						$query['fields'], 
-						$query['table'], 
-						$params
-					);
+		if (
+			is_array( $query ) && 
+			isset( $query['fields'] ) && 
+			$query['table']
+		) {
+			$sql = self::_selectStatement( 
+					$query['fields'], 
+					$query['table'], 
+					$params
+				);
 		} elseif ( is_array( $query ) ) {
 			return null; // Unrecognized query
 		}
@@ -174,7 +178,12 @@ abstract class Model {
 	 * @param bool $noKey Prevent returning the last inserted ID if true
 	 * @return int The ID of the newly inserted row or 0 on failure
 	 */
-	protected static function put( $table, $params, $noKey = false, $name = 'default' ) {
+	protected static function put(
+		$table, 
+		$params, 
+		$noKey		= false, 
+		$name		= 'default'
+	) {
 		$sql	= self::_insertStatement( $table, $params );
 		$stmt	= self::prepare( $sql, $name );
 		
@@ -198,7 +207,11 @@ abstract class Model {
 	 * @param array $records Parameter array of rows
 	 * @return array IDs of each newly inserted row or empty array on failure
 	 */
-	protected static function putAll( $table, $records = array(), $name = 'default' ) {
+	protected static function putAll(
+		$table, 
+		$records	= array(), 
+		$name		= 'default'
+	) {
 		if ( !count( $records ) ) { 
 			return array(); 
 		}
@@ -211,7 +224,7 @@ abstract class Model {
 			
 			foreach ( $records as $params ) {
 				if ( $stmt->execute( $params ) ) {
-					$row[] = array_key_exists( 'id', $params )?
+					$row[] = array_key_exists( 'id', $params ) ?
 							true : self::lastId();
 				}
 			}
@@ -235,7 +248,11 @@ abstract class Model {
 	 * @param array $params Column parameters (id required)
 	 * @return int Number of rows affected
 	 */
-	protected static function edit( $table, $params, $name = 'default' ) {
+	protected static function edit(
+		$table,
+		$params, 
+		$name		= 'default'
+	) {
 		if ( !isset( $params['id'] ) ) {
 			return 0;
 		}
@@ -244,7 +261,9 @@ abstract class Model {
 		unset( $params['id'] );
 		
 		$sql		= self::_updateStatement( 
-					$table, $params, "$table.id = :id"
+					$table, 
+					$params, 
+					"$table.id = :id"
 				);
 		$params['id']	= $id;
 		return self::execute( $sql, $params, $name );
@@ -258,8 +277,12 @@ abstract class Model {
 	 * 
 	 * @return int Number of rows affected/deleted
 	 */
-	protected static function delete( $table, $params, $name = 'default' ) {
-		$sql	= self::_deleteStatement( $table, $params );
+	protected static function delete(
+		$table,
+		$params,
+		$name		= 'default'
+	) {
+		$sql		= self::_deleteStatement( $table, $params );
 		return self::execute( $sql, $params, $name );
 	}
 	
@@ -268,14 +291,19 @@ abstract class Model {
 	 * @example Deleting a post with ID = 223
 	 * 		Model::delete( 'posts', 223 );
 	 */
-	protected static function deleteById( $table, $id, $name = 'default' ) {
+	protected static function deleteById(
+		$table, 
+		$id,
+		$name		= 'default'
+	) {
 		if ( is_array( $id ) ) {
 			self::_addParams( 'str', $id, $params, $in );
 		} else {
-			$in = ':id';
-			$params = array( 'id' => $id );
+			$in	= ':id';
+			$params	= array( 'id' => $id );
 		}
-		$sql = "DELETE FROM $table WHERE id IN ( $in );";
+		
+		$sql		= "DELETE FROM $table WHERE id IN ( $in );";
 		return self::execute( $sql, $params, $name );
 	}
 	
@@ -291,21 +319,26 @@ abstract class Model {
 	 * Execute a PDO statement for one set of parameters
 	 * @return int Database rows affected
 	 */
-	protected static function execute( $sql, $params = array(), $name = 'default' ) {
+	protected static function execute( 
+		$sql, 
+		$params		= array(), 
+		$name		= 'default' 
+	) {
 		$result = 0;
 		
 		try {
-			$stmt = self::prepare( $sql, $name );
+			$stmt	= self::prepare( $sql, $name );
 			if ( empty( $params ) ) {
 				if ( $stmt->execute() ) {
 					$result = $stmt->rowCount();
 				}
 			} elseif ( $stmt->execute( $params ) ) {
-				$result = $stmt->rowCount();
+				$result	= $stmt->rowCount();
 			}
 		} catch( \PDOException $e ) {
-			self::$errors[] = array( 
-				"execute of SQL : $sql", $e->getMessage()
+			self::$errors[]	= array( 
+				"execute of SQL : $sql", 
+				$e->getMessage()
 			);
 		}
 		
@@ -319,18 +352,20 @@ abstract class Model {
 	protected static function executeAll( 
 		$sql, 
 		$paramCollection = array(), 
-		$name = 'default'
+		$name		 = 'default'
 	) {
 		$result = array();
 		
 		try {
 			self::beginTransaction( $name );
 			$stmt = self::prepare( $sql );
+			
 			foreach ( $paramCollection as $params ) {
 				if( $stmt->execute( $params ) ) {
 					$result[] = $stmt->rowCount();
 				}
 			}
+			
 			self::commit( $name );
 		} catch( \PDOException $e ) {
 			self::$errors[] = array( 
@@ -347,7 +382,10 @@ abstract class Model {
 	 * Execute multiple PDO statements with matching parameters
 	 * @return array Of integers Database rows affected
 	 */
-	protected static function executeMultiple( array $statements, $name = 'default' ) {
+	protected static function executeMultiple( 
+		array $statements, 
+		$name		= 'default'
+	) {
 		$result = array();
 		
 		try {
@@ -439,8 +477,8 @@ abstract class Model {
 	protected static function _addParams( 
 		$t, 
 		&$values, 
-		&$params = array(), 
-		&$in = '' 
+		&$params	= array(), 
+		&$in		= '' 
 	) {
 		$vc = count( $values );
 		for ( $i = 0; $i < $vc; $i++ ) {
@@ -461,13 +499,14 @@ abstract class Model {
 	 * name = :name, email = :email, password = :password etc...
 	 */
 	protected static function _setParams( 
-		$fields = array(), 
-		$mode = 'select', 
-		$table = '' 
+		$fields		= array(), 
+		$mode		= 'select', 
+		$table		= '' 
 	) {
 		$columns = is_array( $fields ) ? 
 				array_keys( $fields ) : 
-				array_map( 'trim', explode( ',', $fields ) );
+				array_map( 'trim', explode( ',', $fields )
+			);
 		
 		switch( $mode ) {
 			case 'select':
@@ -489,7 +528,11 @@ abstract class Model {
 		}
 	}
 	
-	protected static function _selectStatement( $table, $fields, $params ) {
+	protected static function _selectStatement(
+		$table,
+		$fields,
+		$params
+	) {
 		$cols = self::_setParams( $fields, 'select', $table );
 		$vals = self::_setParams( $fields, 'update', array_keys( $params ) );
 		return	"SELECT $cols FROM $table WHERE $vals;";
@@ -541,8 +584,8 @@ abstract class Model {
 	 */
 	protected static function _updateStatement(
 		$table, 
-		$fields = null, 
-		$cond = '' 
+		$fields		= null, 
+		$cond		= '' 
 	) {
 		$params = self::_setParams( $fields, 'update', $table );
 		$sql	= "UPDATE $table SET $params";
@@ -565,8 +608,8 @@ abstract class Model {
 	 */
 	protected static function _deleteStatement( 
 		$table, 
-		$fields = null, 
-		$limit = null
+		$fields		= null, 
+		$limit		= null
 	) {
 		$params	= self::_setParams( $fields, 'delete', $table );
 		$sql	= "DELETE FROM $table WHERE ( $params )";
@@ -616,17 +659,24 @@ abstract class Model {
 	 * Limit the maximum page limit to 3 digits ( 1 - 999 )
 	 */
 	protected static function checkLimit( $limit = null ) {
-		if ( null !== $limit && 
-			preg_match( '/^([1-9][0-9]?+){1,3}$/', $limit ) ) {
+		if (
+			null !== $limit && 
+			preg_match( '/^([1-9][0-9]?+){1,3}$/', $limit )
+		) {
 			return true;
 		}
 		
 		return false;
 	}
 	
-	protected static defaultLimit( $filter, $value, $default ) {
+	protected static defaultLimit(
+		$filter,
+		$value,
+		$default 
+	) {
 		if ( isset( $filter[$value] ) ) {
-			return self::checkLimit( $filter[$value] )? $filter[$value] : $default;
+			return self::checkLimit( $filter[$value] ) ? 
+				$filter[$value] : $default;
 		}
 		return $default;
 	}
@@ -647,9 +697,9 @@ abstract class Model {
 	 */
 	protected static function filterConfig( &$filter = array() ) {
 		if ( isset( $filter['id'] ) ) {
-			$filter['id'] = self::isId( $filter['id'] )? $filter['id'] : 0;
+			$filter['id']	= self::isId( $filter['id'] )? $filter['id'] : 0;
 		} else {
-			$filter['id'] = 0;
+			$filter['id']	= 0;
 		}
 		
 		$filter['limit']	= self::defaultLimit( $filter, 'limit', 1 );
@@ -678,7 +728,12 @@ abstract class Model {
 	 * @param string $field Composite column name
 	 * @param array $fields List of columns to aggregate from parent table
 	 */
-	protected static function aggregateField( $table, $field, Array $fields, $name = 'default' ) {
+	protected static function aggregateField( 
+		$table, 
+		$field, 
+		Array $fields, 
+		$name		= 'default' 
+	) {
 		/**
 		 * If this is SQLite (I find your lack of faith, disturbing)
 		 */
@@ -747,7 +802,7 @@ abstract class Model {
 	 * Generate the action authorization key based on user signature
 	 */
 	protected static function genKey( $auth ) {
-		$key = mcrypt_create_iv( 6, MCRYPT_DEV_URANDOM );
+		$key	= mcrypt_create_iv( 6, MCRYPT_DEV_URANDOM );
 		return hash( self::AUTH_ALGO, $key . $auth );
 	}
 	
@@ -755,9 +810,9 @@ abstract class Model {
 	 * Highly restrictive label name filter ('tag', 'category', 'forum' etc...)
 	 */
 	protected static function filterFields( $labels ) {
-		$filter  = function( $v ) {
-			return empty( $v )? '' : 
-				preg_replace( self::FIELD_REGEX, '', trim( $v ) );
+		$filter	= function( $v ) {
+			return empty( $v ) ? 
+				'' : preg_replace( self::FIELD_REGEX, '', trim( $v ) );
 		};
 		
 		if ( !is_array( $labels ) ) {
