@@ -7,7 +7,7 @@
  * 
  * @author Eksith Rodrigo <reksith at gmail.com>
  * @license http://opensource.org/licenses/ISC ISC License
- * @version 0.5
+ * @version 0.6
  * @uses Cxn
  */
 
@@ -16,34 +16,30 @@ namespace Dragon\Models;
 abstract class Model {
 	
 	/**
-	 * @var int Staring timestamp epoch for Id generation (if not using auto increment)
+	 * @var int Class object identifier key (every object should have one)
 	 */
-	const EPOCH		= 1412685173;
+	public $id;
 	
 	/**
-	 * @var int Pagination hard limit.
+	 * @var int Class object creation date. Should not modified.
 	 */
-	const PAGE_LIMIT	= 500;
+	public $created_at;
 	
 	/**
-	 * @var array 
+	 * @var int Class object edited/saved date. Must be modified on each save.
 	 */
-	private static $t_count	= array();
+	public $updated_at;
 	
 	/**
-	 * @var object PDO connection.
+	 * @var int Special status. Relevance will differ per object.
+	 * @example An entry with status = -1 may be 'hidden' from view
 	 */
-	protected static $db = null;
-	
-	/**
-	 * @var string Database type
-	 */
-	protected static $dbType;
+	public $status			= 0;
 	
 	/**
 	 * @var array Any errors accumulated during database interaction
 	 */
-	public static $errors = array();
+	public static $errors	= array();
 	
 	/**
 	 * @var array List of open connections in :
@@ -57,11 +53,17 @@ abstract class Model {
 	private static $connstrings = array();
 	
 	
+	const FIELD_REGEX	= '/[^a-z\_\.]/i';
+	
+	const SEARCH_REGEX	= '/[^\pN\pL\s\-\_\.]/i';
+	
+	
 	/**
 	 * Checks PDO connection or assigns to self::$db 
 	 * if it hasn't been set and a new one has been passed.
 	 * 
 	 * @param object $db PDO connection
+	 * @param string $name Connection name
 	 * @return bool True of the variable was set. False on failure.
 	 */
 	private static function _db( $db = null, $name = 'default' ) {
@@ -93,15 +95,16 @@ abstract class Model {
 	 * Note: This depends on the Cxn class and also DBH (your connection string) being set
 	 */
 	public static function init( $name = 'default' ) {
-		if ( !self::_db( null, $name ) ) {
-			$db		= new Cxn();
-			$cs		= self::getConnString( $name );
-			if ( null === $cs ) {
-				throw new Exception( 'Connection string not found' );
-			}
-			$db->connect( $cs, $dbType, $pdo );
-			self::$connections[$name]	= array( $pdo, $dbType, 0 );
+		if ( self::_db( null, $name ) ) { 
+			return ;
 		}
+		$db		= new Cxn();
+		$cs		= self::getConnString( $name );
+		if ( null === $cs ) {
+			throw new Exception( 'Connection string not found' );
+		}
+		$pdo		= $db->connect( $cs, $dbType, $pdo );
+		self::$connections[$name]	= array( $pdo, $dbType, 0 );
 	}
 	
 	private static function getConnString( $name ) {
@@ -129,12 +132,22 @@ abstract class Model {
 	 * 	this or null on failure
 	 */
 	protected static function find( 
-		$sql, 
+		$query, 
 		$params, 
 		$fetch = 'class', 
 		$name = 'default'
-	) {
-		$stmt	= self::prepare( $sql, $name );
+	) {//Incorporate joins
+		if ( is_array( $query ) && isset( $query['fields'] ) && $query['table'] ) {
+				$sql = self::_selectStatement( 
+						$query['fields'], 
+						$query['table'], 
+						$params
+					);
+		} elseif ( is_array( $query ) ) {
+			return null; // Unrecognized query
+		}
+		
+		$stmt	= self::prepare( $query, $name );
 		
 		if ( $stmt->execute( $params ) ) {
 			if ( 'row' === $fetch ) {
@@ -163,7 +176,7 @@ abstract class Model {
 	 */
 	protected static function put( $table, $params, $noKey = false, $name = 'default' ) {
 		$sql	= self::_insertStatement( $table, $params );
-		$stmt	= self::prepare( $sql );
+		$stmt	= self::prepare( $sql, $name );
 		
 		if ( $stmt->execute( $params ) ) {
 			/**
@@ -194,7 +207,7 @@ abstract class Model {
 		try {
 			self::beginTransaction( $name );
 			$sql	= self::_insertStatement( $table, $records[0] );
-			$stmt	= self::prepare( $sql );
+			$stmt	= self::prepare( $sql, $name );
 			
 			foreach ( $records as $params ) {
 				if ( $stmt->execute( $params ) ) {
@@ -398,6 +411,28 @@ abstract class Model {
 			self::$connections[$name][0]->lastInsertId();
 	}
 	
+	protected static function metaJoin( $table, $labels ) {
+		$table	= preg_replace( self::FIELD_REGEX, '', $table );
+		$params	= parent::filterFields( $labels );
+		return self::metaJoinAll( $table ) . " AND meta.label IN ( $params )";
+	}
+	
+	private static function metaJoinAll( $table ) {
+		return "LEFT JOIN $table_meta ON post.id = $table_meta.post_id 
+			LEFT JOIN meta ON $table_meta.meta_id = meta.id";
+	}
+	
+	protected static function newFamily( $table, $id, $parent ) {
+		$table	= preg_replace( self::FIELD_REGEX, '', $table );
+		$params = array(
+			'parent_id'	=> $parent,
+			'child_id'	=> $id
+		);
+		
+		return self::put( $table, $params, true );
+	}
+	
+	
 	/**
 	 * Add parameters to conditional IN/NOT IN ( x,y,z ) query
 	 */
@@ -452,6 +487,12 @@ abstract class Model {
 					}, $columns );
 				return implode( ', ', $v );
 		}
+	}
+	
+	protected static function _selectStatement( $table, $fields, $params ) {
+		$cols = self::_setParams( $fields, 'select', $table );
+		$vals = self::_setParams( $fields, 'update', array_keys( $params ) );
+		return	"SELECT $cols FROM $table WHERE $vals;";
 	}
 	
 	/**
@@ -545,8 +586,6 @@ abstract class Model {
 	
 	/**
 	 * Pagination offset calculator
-	 * Hard limit set for page since we rarely browse that many casually. 
-	 * That's what searching is for ( also reduces abuse )
 	 * 
 	 * @param int $page Currently requested index (starting from 1)
 	 * @param int $limit Maximum number of records per page
@@ -560,7 +599,7 @@ abstract class Model {
 			return 0; 
 		}
 		
-		return ( $page > self::PAGE_LIMIT ) ? 0 : ( $page - 1 ) * $limit;
+		return ( $page - 1 ) * $limit;
 	}
 	
 	/**
@@ -578,11 +617,18 @@ abstract class Model {
 	 */
 	protected static function checkLimit( $limit = null ) {
 		if ( null !== $limit && 
-			preg_match( '/^([1-9][0-9]?+){1,2}$/', $limit ) ) {
+			preg_match( '/^([1-9][0-9]?+){1,3}$/', $limit ) ) {
 			return true;
 		}
 		
 		return false;
+	}
+	
+	protected static defaultLimit( $filter, $value, $default ) {
+		if ( isset( $filter[$value] ) ) {
+			return self::checkLimit( $filter[$value] )? $filter[$value] : $default;
+		}
+		return $default;
 	}
 	
 	/**
@@ -597,6 +643,34 @@ abstract class Model {
 	}
 	
 	/**
+	 * Sets filter configuration ( pagination, limit, id etc... )
+	 */
+	protected static function filterConfig( &$filter = array() ) {
+		if ( isset( $filter['id'] ) ) {
+			$filter['id'] = self::isId( $filter['id'] )? $filter['id'] : 0;
+		} else {
+			$filter['id'] = 0;
+		}
+		
+		$filter['limit']	= self::defaultLimit( $filter, 'limit', 1 );
+		$filter['page']		= self::defaultLimit( $filter, 'page', 1 );
+		
+		$filter['search']	= isset( $filter['search'] ) ?	
+						preg_replace( 
+							self::SEARCH_REGEX, 
+							$filter['search'] 
+						) : '';
+		
+		$offset			= self::_offset(
+						$filter['page'] , $filter['limit']
+					);
+		
+		if ( $offset > 0 ) {
+			$filter['offset'] = $offset;
+		}
+	}
+	
+	/**
 	 * Composite field for multi-column aggregate data from a single table
 	 * E.G. label,term1|label,term2 format
 	 * 
@@ -604,7 +678,7 @@ abstract class Model {
 	 * @param string $field Composite column name
 	 * @param array $fields List of columns to aggregate from parent table
 	 */
-	public static function aggregateField( $table, $field, Array $fields, $name = 'default' ) {
+	protected static function aggregateField( $table, $field, Array $fields, $name = 'default' ) {
 		/**
 		 * If this is SQLite (I find your lack of faith, disturbing)
 		 */
@@ -632,45 +706,49 @@ abstract class Model {
 		return "GROUP_CONCAT( CONCAT( {$params} ) SEPARATOR '|' ) AS {$field}";
 	}
 	
-	public static function runActions( $name = 'default' ) {
-		if ( 1 === mt_rand( 1, APROB ) ) {
-			$v = mt_rand( 0, 2 );
-			$stmt = self::$db->prepare( 
-					"INSERT INTO actions ( run ) VALUES ( $v );", $name
-				);
-			$stmt->execute();
-		}
-	}
-	
 	/**
-	 * Sets filter configuration ( pagination, limit, id etc... )
+	 * Converts label,term1|label,term2 format into
+	 * label (term1, term2) format
+	 * 
+	 * @param string $labels Unformatted string from database
+	 * @returns array
 	 */
-	protected static function filterConfig( &$filter = array() ) {
-		if ( !isset( $filter['id'] ) || !self::isId( $filter['id'] ) ) {
-			$filter['id'] = 0;
-		}
+	protected static function parseAggregate( $labels ) {
+		/**
+		 * taxonomy("tags", "categories", "forum" etc...),
+		 * label("computers", "programming", "tech" etc...)
+		 */
+		$params	= array();
+		$taxos	= explode( '|', $labels );
 		
-		if ( !isset( $filter['limit'] ) || 
-			!self::checkLimit( $filter['limit'] ) ) {
-			$filter['limit'] = 1;
-		}
-		
-		if ( !isset( $filter['page'] ) || !self::isId( $filter['page'] ) ) {
-			if ( $filter['page'] > self::PAGE_LIMIT ) { 
-				// Pagination hard limit
-				$filter['page'] = self::PAGE_LIMIT;
+		foreach( $taxos as $t ) {
+			if ( empty( $t ) ) { continue; }
+			
+			$tx = explode( ',', $t );
+			if ( empty( $tx ) ) { continue; }
+			
+			/**
+			 * Do we have an array for this taxonomy label already?
+			 * If not, create it
+			 */
+			if ( !isset( $params[$tx[0]] ) ) {
+				$params[$tx[0]] = array();
+			}
+			
+			if ( isset( $tx[1] ) ) {
+				$params[$tx[0]][] = $tx[1];
 			}
 		}
 		
-		$filter['search']	= isset( $filter['search'] ) ?	
-						$filter['search'] : '';
-		$offset			= self::_offset(
-						$filter['page'] , $filter['limit']
-					);
-		
-		if ( $offset > 0 ) {
-			$filter['offset'] = $offset;
-		}
+		return $params;
+	}
+	
+	/**
+	 * Generate the action authorization key based on user signature
+	 */
+	protected static function genKey( $auth ) {
+		$key = mcrypt_create_iv( 6, MCRYPT_DEV_URANDOM );
+		return hash( self::AUTH_ALGO, $key . $auth );
 	}
 	
 	/**
@@ -679,7 +757,7 @@ abstract class Model {
 	protected static function filterFields( $labels ) {
 		$filter  = function( $v ) {
 			return empty( $v )? '' : 
-				preg_replace( '/[^a-z\_\.]/i', '', trim( $v ) );
+				preg_replace( self::FIELD_REGEX, '', trim( $v ) );
 		};
 		
 		if ( !is_array( $labels ) ) {
@@ -687,44 +765,5 @@ abstract class Model {
 		}
 		
 		return array_map( $filter, $params );
-	}
-	
-	/**
-	 * A short alphanumeric code based on a numeric range.
-	 * Note: This is not unique and shouldn't be used for anything 
-	 * cryptography related.
-	 */
-	protected static function randCode( $min, $max = PHP_INT_MAX ) {
-		$r = mt_rand( $min, $max );
-		return base_convert( $r, 10, 36 );
-	}
-	
-	/**
-	 * Generate a sequential record id using the current EPOCH
-	 */
-	public static function genId() {
-		list( $u, $s ) = explode( ' ', microtime() );
-		
-		$m = ( float ) $u * 1000;
-		$s = ( float ) $s - self::EPOCH;
-		return floor( $s + $m ) . rnd( 10, 99 );
-	}
-	
-	/**
-	 * Generate a sequential guid
-	 */
-	public static function guid() {
-		$h = hash( 
-			'tiger160,3', 
-			uniqid( '', true ) . 
-			Engine\Main::getRequestId() . 
-			microtime( true ) 
-		);
-		
-		return substr( $u, 0, 8 )	. ' - ' .
-			substr( $h, 0, 4 )	. ' - ' .
-			substr( $h, 8, 4 )	. ' - ' .
-			substr( $h, 12, 4 )	. ' - ' .
-			substr( $h, 16, 12 );
 	}
 }
