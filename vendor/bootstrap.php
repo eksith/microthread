@@ -6,6 +6,16 @@
 define( 'PKGS',		PATH . 'vendor/' );
 
 
+define( 'ARCHIVE',	PATH . 'data/archive/' );
+define( 'CONFIG',	PATH . 'data/config/' );
+define( 'CACHE_TIME', 	3600 );
+
+/**
+ * Data parameters
+ */
+define( 'CONN',			'sqlite:data\\store.sqlite' );
+
+
 /**
  * Autoloader
  */
