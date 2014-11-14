@@ -669,7 +669,7 @@ abstract class Model {
 		return false;
 	}
 	
-	protected static defaultLimit(
+	protected static function defaultLimit(
 		$filter,
 		$value,
 		$default 
