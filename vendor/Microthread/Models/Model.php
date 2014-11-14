@@ -695,7 +695,7 @@ abstract class Model {
 	/**
 	 * Sets filter configuration ( pagination, limit, id etc... )
 	 */
-	protected static function filterConfig( &$filter = array() ) {
+	protected static function filterConfig( $filter = array() ) {
 		if ( isset( $filter['id'] ) ) {
 			$filter['id']	= self::isId( $filter['id'] )? $filter['id'] : 0;
 		} else {
@@ -704,7 +704,6 @@ abstract class Model {
 		
 		$filter['limit']	= self::defaultLimit( $filter, 'limit', 1 );
 		$filter['page']		= self::defaultLimit( $filter, 'page', 1 );
-		
 		$filter['search']	= isset( $filter['search'] ) ?	
 						preg_replace( 
 							self::SEARCH_REGEX, 
@@ -718,6 +717,7 @@ abstract class Model {
 		if ( $offset > 0 ) {
 			$filter['offset'] = $offset;
 		}
+		return $filter;
 	}
 	
 	/**
@@ -796,14 +796,6 @@ abstract class Model {
 		}
 		
 		return $params;
-	}
-	
-	/**
-	 * Generate the action authorization key based on user signature
-	 */
-	protected static function genKey( $auth ) {
-		$key	= mcrypt_create_iv( 6, MCRYPT_DEV_URANDOM );
-		return hash( self::AUTH_ALGO, $key . $auth );
 	}
 	
 	/**
