@@ -210,11 +210,6 @@ class Post extends Model {
 	 * Filter all the basic fields for creating/editing
 	 */
 	private function baseParams( &$tags ) {
-		$this->raw = $this->hashtags( $this->raw, $tags );
-		if ( !empty( $tags ) ) {
-			$this->taxonomy[] = array( 'tags' => $tags );
-		}
-		
 		$this->plain	= Microthread\Html::plainText( $this->body )
 		$this->summary	= Microthread\Util::smartTrim( self::POST_MAX_SUMMARY_LENGTH );
 		
@@ -347,21 +342,5 @@ class Post extends Model {
 	protected static function userJoin() {
 		return "LEFT JOIN posts_users ON post.id = posts_users.post_id 
 			LEFT JOIN users ON posts_users.user_id = users.id ";
-	}
-	
-	/**
-	 * Twitter style #hashtags link formatting
-	 */
-	protected function hashtags( $data, &$tags ) {
-		$tags	= array();
-		$data	= preg_replace_callback(
-				"/(^|)#(\p{L}\p{N}{1,30})/", 
-				function( $matches ) use ( $tags ) {
-					$tags[] = $match[2];
-					return 
-					"<a href='/tags/{$match[2]}' class='tag'>{$match[0]}</a>";
-				},
-				$data, 5 );
-		return $data;
 	}
 }
