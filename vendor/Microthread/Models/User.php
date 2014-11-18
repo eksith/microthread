@@ -75,6 +75,27 @@ class User extends Model {
 		return self::STATUS_ERROR_STORAGE;
 	}
 	
+	public function find( $filter = array() ) {
+		$filter		= parent::filterConfig( $filter );
+		$params		= array();
+		$sql		= 'SELECT id, username, created_at, updated_at, status';
+		
+		if ( isset( $filter['bio'] ) ) {
+			$sql .= ', bio';
+		}
+		if ( isset( $filter['meta'] ) ) {
+			$sql .= ' '. parent::metaJoin( 'users_meta', 'user', $filter['meta'] );
+		}
+		$sql .= ' WHERE';
+		if ( !empty(  $filter['search'] ) ) {
+			$params['username'] = $filter['search'];
+			$sql .= ' username LIKE %:username%'
+		}
+		
+		$sql .= ';';
+		return parent::find( $sql, $params );
+	}
+	
 	/**
 	 * Authenticate.
 	 */
