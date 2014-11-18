@@ -710,6 +710,7 @@ abstract class Model {
 	 * Sets filter configuration ( pagination, limit, id etc... )
 	 */
 	protected static function filterConfig( $filter = array() ) {
+		$filter = array_filter( $filter, 'strlen' );
 		if ( isset( $filter['id'] ) ) {
 			$filter['id']	= self::isId( $filter['id'] )? $filter['id'] : 0;
 		} else {
