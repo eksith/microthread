@@ -10,7 +10,7 @@
 namespace Microthread\Models;
 use Microthread;
 
-class ForumPost extends Podel {
+class ForumPost extends Post {
 	
 	public function save() {
 		$this->raw = $this->hashtags( $this->raw, $tags );
