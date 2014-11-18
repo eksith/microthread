@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * Basic session class
+ * 
+ * @author Eksith Rodrigo <reksith at gmail.com>
+ * @license http://opensource.org/licenses/ISC ISC License
+ * @version 0.1
+ */
+ 
 namespace Microthread\Models;
 use Microthread;
 
@@ -28,7 +35,7 @@ class Session extends Model {
 			return self::decrypt( $this->data, $key );
 		}
 		if ( 'encrypted' === $name ) {
-			$this->skey	= hash( self::HASH_ALGO, uCrypt::IV( 5 ) );
+			$this->skey	= hash( self::HASH_ALGO, Microthread\uCrypt::IV( 5 ) );
 			$key		= hash( 
 						self::HASH_ALGO, 
 						getRawSig() . $this->skey
