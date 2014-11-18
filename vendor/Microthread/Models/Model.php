@@ -10,8 +10,8 @@
  * @version 0.6
  * @uses Cxn
  */
-
-namespace Dragon\Models;
+ 
+namespace Microthread\Models;
 
 abstract class Model {
 	
@@ -449,15 +449,29 @@ abstract class Model {
 			self::$connections[$name][0]->lastInsertId();
 	}
 	
-	protected static function metaJoin( $table, $labels ) {
+	protected static function metaJoin( $table, $parent, $labels ) {
 		$table	= preg_replace( self::FIELD_REGEX, '', $table );
+		$parent	= preg_replace( self::FIELD_REGEX, '', $parent );
 		$params	= parent::filterFields( $labels );
-		return self::metaJoinAll( $table ) . " AND meta.label IN ( $params )";
+		return self::metaJoinAll( $table, $parent ) . " AND meta.label IN ( $params )";
 	}
 	
-	private static function metaJoinAll( $table ) {
-		return "LEFT JOIN $table_meta ON post.id = $table_meta.post_id 
-			LEFT JOIN meta ON $table_meta.meta_id = meta.id";
+	private static function metaJoinAll( $table, $parent ) {
+		return "LEFT JOIN $table ON $parent.id = $table.parent_id 
+			LEFT JOIN meta ON $table.child_id = meta.id";
+	}
+	
+	protected static function newFamilyMulti( $table, $family = array() ) {
+		$table	= preg_replace( self::FIELD_REGEX, '', $table );
+		$params	= array();
+		foreach( $family as $f ) {
+			$params[] =  = array(
+				'parent_id'	=> $f[0],
+				'child_id'	=> $f[1]
+			);
+		}
+		
+		return self::putAll( $table, $params );
 	}
 	
 	protected static function newFamily( $table, $id, $parent ) {
@@ -737,7 +751,7 @@ abstract class Model {
 		/**
 		 * If this is SQLite (I find your lack of faith, disturbing)
 		 */
-		$dbType = self::getDbType( $name );
+		$dbType	= self::getDbType( $name );
 		
 		if ( "sqlite" === $dbType ) {
 			$params = $table . '.' . implode( "||','||{$table}.", $fields );
