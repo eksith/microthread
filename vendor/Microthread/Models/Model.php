@@ -91,8 +91,7 @@ abstract class Model {
 	}
 	
 	/**
-	 * Setup local Cxn instance with PDO 
-	 * Note: This depends on the Cxn class and also DBH (your connection string) being set
+	 * Setup local Cxn instance as late as possible with PDO 
 	 */
 	public static function init( $name = 'default' ) {
 		if ( self::_db( null, $name ) ) { 
@@ -383,7 +382,7 @@ abstract class Model {
 	 * @return array Of integers Database rows affected
 	 */
 	protected static function executeMultiple( 
-		array $statements, 
+		Array $statements, 
 		$name		= 'default'
 	) {
 		$result = array();
@@ -461,7 +460,7 @@ abstract class Model {
 			LEFT JOIN meta ON $table.child_id = meta.id";
 	}
 	
-	protected static function newFamilyMulti( $table, $family = array() ) {
+	protected static function newFamilyMulti( $table, Array $family ) {
 		$table	= preg_replace( self::FIELD_REGEX, '', $table );
 		$params	= array();
 		foreach( $family as $f ) {
@@ -709,7 +708,7 @@ abstract class Model {
 	/**
 	 * Sets filter configuration ( pagination, limit, id etc... )
 	 */
-	protected static function filterConfig( $filter = array() ) {
+	protected static function filterConfig( Array $filter ) {
 		$filter = array_filter( $filter, 'strlen' );
 		if ( isset( $filter['id'] ) ) {
 			$filter['id']	= self::isId( $filter['id'] )? $filter['id'] : 0;
@@ -749,11 +748,11 @@ abstract class Model {
 		Array $fields, 
 		$name		= 'default' 
 	) {
+		$dbType	= self::getDbType( $name );
+		
 		/**
 		 * If this is SQLite (I find your lack of faith, disturbing)
 		 */
-		$dbType	= self::getDbType( $name );
-		
 		if ( "sqlite" === $dbType ) {
 			$params = $table . '.' . implode( "||','||{$table}.", $fields );
 			return "GROUP_CONCAT( {$params}, '|' ) AS {$field}";
