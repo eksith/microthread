@@ -12,13 +12,70 @@ use Microthread;
 
 class ForumPost extends Post {
 	
+	public function __set( $name, $value ) {
+		switch( $name ) {
+			case 'tags':
+			case 'categories':
+				$this->taxonomy[] = array( $name => $value );
+				break;
+				
+			case 'title':		// Post title
+				$this->meta[$name] = array( $value, 'text' );
+				break;
+		}
+	}
+	
+	public function __get( $name ) {
+		switch( $name ) {
+			case 'tags':
+			case 'categories':
+				return isset( $this->taxonomy[$name] )? 
+					$this->taxonomy[$name] : null;
+			
+			case 'title':
+				return isset( $this->meta[$name] )? 
+					$this->meta[$name] : null;
+		}
+		return null;
+	}
+	
 	public function save() {
-		$this->raw = $this->hashtags( $this->raw, $tags );
+		$this->raw			= $this->hashtags( $this->raw, $tags );
+		$this->meta['forumpost']	= array( true, 'bool' );
+		
 		if ( !empty( $tags ) ) {
-			$this->taxonomy[] = array( 'tags' => $tags );
+			$this->tags = array( 'tags' => $tags );
 		}
 		
 		$this->save();
+	}
+	
+	public static function getIndex( $page = 1 ) {
+		$filter = array(
+			'page'		=> $page,
+			'meta'		=> 'title,forumpost'
+		);
+		
+		return parent::find( $filter );
+	}
+	
+	public static function getThread( $id, $page = 1 ) {
+		$filter = array(
+			'parent'=> $id,
+			'page'	=> $page,
+			'meta'	=> 'title,forumpost'
+		);
+		
+		return parent::find( $filter );
+	}
+	
+	public static function getPost( $id ) {
+		$filter = array(
+			'id'	=> $id,
+			'meta'	=> 'title,forumpost'
+		);
+		
+		return parent::find( $filter );
 	}
 	
 	/**
