@@ -1,0 +1,70 @@
+<?php
+/**
+ * News post with publish and expiration dates plus tags and categories
+ * 
+ * @author Eksith Rodrigo <reksith at gmail.com>
+ * @license http://opensource.org/licenses/ISC ISC License
+ * @version 0.1
+ */
+ 
+namespace Microthread\Models;
+use Microthread;
+
+class NewsPost extends Post {
+	
+	public function __set( $name, $value ) {
+		switch( $name ) {
+			case 'tags':
+			case 'categories':
+				$this->taxonomy[] = array( $name => $value );
+				break;
+				
+			case 'title':		// Post title
+				$this->meta[$name] = array( $value, 'text' );
+				break;
+				
+			case 'published_at':	// Post publish scheduled date
+			case 'expires_at':	// Post expiration date
+				$this->meta[$name] = array( $value, 'datetime' );
+				break;
+		}
+	}
+	
+	public function __get( $name ) {
+		switch( $name ) {
+			case 'tags':
+			case 'categories':
+				return isset( $this->taxonomy[$name] )? 
+					$this->taxonomy[$name] : null;
+			
+			case 'title':
+			case 'published_at':
+			case 'expires_at':
+				return isset( $this->meta[$name] )? 
+					$this->meta[$name] : null;
+		}
+		return null;
+	}
+	
+	public static function getIndex( $page = 1 ) {
+		$filter = array( 
+			'page'	=> $page,
+			'meta'	=> 'title,published_at,expires_at,newspost'
+		);
+		return parent::find( $filter );
+	}
+	
+	public static function getPost( $id ) {
+		$filter = array(
+			'id'	=> $id,
+			'meta'	=> 'title,published_at,expires_at,newspost'
+		);
+		
+		return parent::find( $filter );
+	}
+	
+	public function save() {
+		$this->meta['newspost']	= array( true, 'bool');
+		$this->save();
+	}
+}
