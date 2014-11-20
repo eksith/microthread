@@ -16,8 +16,10 @@ class Cxn {
 	public function __construct() {}
 	
 	/**
-	 * @param string Connection string
-	 * @param string Database type inferred form connection string
+	 * @param string $dbh Database connection string
+	 * @param string $dbType Database type inferred form connection string
+	 * @param string $pdo Database PDO object
+	 * @return 
 	 */
 	public function connect( $dbh, &$dbType, &$pdo ) {
 		$settings = array(
