@@ -5,6 +5,15 @@
  */
 define( 'PKGS',		PATH . 'vendor/' );
 
+/**
+ * Application name for settings stored in php.ini (experimental)
+ */
+define( 'APPNAME',	'demo' );
+
+/**
+ * Settings encrypt/decrypt key (experimental)
+ */
+define( 'SETTINGS_KEY',	'test' );
 
 define( 'ARCHIVE',	PATH . 'data/archive/' );
 define( 'CONFIG',	PATH . 'data/config/' );
