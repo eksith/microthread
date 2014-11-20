@@ -1,5 +1,4 @@
 <?php
-
 /**
  * HTML parsing, filtering and sanitization
  * This class depends on Tidy which is included in the core since PHP 5.3
@@ -497,7 +496,7 @@ final class Html {
 	 * get a functional domain name.
 	 * 
 	 * @param string $v Raw URL to validate
-	 * @returns boolean
+	 * @return boolean
 	 */
 	public static function urlFilter( $v ) {
 		return (
@@ -514,7 +513,7 @@ final class Html {
 	 * 
 	 * @param string $v string Attribute name
 	 * @param int $depth Number of times to URL decode
-	 * @returns boolean True if nothing unsavory was found.
+	 * @return boolean True if nothing unsavory was found.
 	 */
 	public static function decodeScrub( $v ) {
 		if ( empty( $v ) ) {
@@ -573,7 +572,7 @@ final class Html {
 	 * UTF-8 compatible URL decoding
 	 * 
 	 * @link http://www.php.net/manual/en/function.urldecode.php#79595
-	 * @returns string
+	 * @return string
 	 */
 	public static function utfdecode( $v ) {
 		$v = urldecode( $v );
@@ -584,7 +583,7 @@ final class Html {
 	/**
 	 * HTML safe character entities in UTF-8
 	 * 
-	 * @returns string
+	 * @return string
 	 */
 	public static function entities( $v, $quotes = true ) {
 		if ( $quotes ) {
