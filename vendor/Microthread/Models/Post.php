@@ -91,7 +91,7 @@ class Post extends Model {
 	/**
 	 * Find a post
 	 */
-	public static function find( $filter = array() ) {
+	public static function find( Array $filter ) {
 		$filter		= parent::filterConfig( $filter );
 		$params		= array();
 		$sql		= self::sqlPrep( $filter, $params, $sql );
@@ -127,7 +127,8 @@ class Post extends Model {
 		
 		$this->putFamily();
 		$this->userInfo();
-		$this->taxo();
+		$this->setTaxo();
+		$this->setMeta();
 		return self::STATUS_COMPLETE;
 	}
 	
@@ -138,7 +139,8 @@ class Post extends Model {
 		$params['id']	= $this->id;
 		if ( parent::edit( 'posts', $params ) ) {
 			$this->userInfo();
-			$this->taxo();
+			$this->setTaxo();
+			$this->setMeta();
 			return self::STATUS_COMPLETE;
 		}
 		
@@ -169,11 +171,19 @@ class Post extends Model {
 		);
 	}
 	
-	private function taxo() {
+	private function setTaxo() {
 		if ( empty( $this->taxonomy ) ) {
 			return;
 		}
 		Taxonomy::apply( $this->id, $this->taxonomy );
+	}
+	
+	private function setMeta() {
+		if ( empty( $this->meta ) ) {
+			return;
+		}
+		
+		Meta::apply( $this->id, $this->meta );
 	}
 	
 	private function putFamily() {
@@ -245,7 +255,7 @@ class Post extends Model {
 			$sql .= ', '. parent::aggregateField(
 					'meta', 
 					'metaData', 
-					array( 'id', 'status', 'label', 'data' ) 
+					array( 'id', 'label', 'parse_as', 'content' ) 
 				) . ', ';
 		}
 		
@@ -307,7 +317,13 @@ class Post extends Model {
 			
 			$sql .= "JOIN posts_family ON 
 					posts_family.parent_id = :parent AND 
-					posts.id = posts_family.child_id WHERE";
+					posts.id = posts_family.child_id";
+			
+			if ( $filter['exclusive'] ) {
+				$sql .= ' AND posts_family.child_id <> posts_family.parent_id';
+			}
+			
+			$sql .= ' WHERE';
 			
 		} else {
 			$sql .= "JOIN posts_family ON 
