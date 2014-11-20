@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Handles form building, user input ( GET, POST ) and validation
  *
@@ -335,7 +334,10 @@ class Forms {
 	 * Encoded input field key (hashed with anti-XSRF token)
 	 */
 	private static function fieldKey( $fname, $name ) {
-		return  hash( self::HASH_ALGO, $name . self::antiXSRF( $fname ) . Main::getSig() );
+		return  hash(
+				self::HASH_ALGO, 
+				$name . self::antiXSRF( $fname ) . Util::getSig() 
+			);
 	}
 	
 	/**
