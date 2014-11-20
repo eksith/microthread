@@ -6,6 +6,7 @@
  * @license http://opensource.org/licenses/ISC ISC License
  * @version 0.1
  */
+
 namespace Microthread;
 use Microthread\Models;
 
@@ -19,8 +20,11 @@ class Settings {
 		}
 		
 		$setting		= Models\Setting::find( $id );
-		self::$loaded[$id]	= $setting->decoded;
-		
+		if ( $decrypt ) {
+			self::$loaded[$id]		= $setting->decrypted;
+		} else {
+			self::$loaded[$id]		= $setting->decoded;
+		}
 		return self::$loaded[$id];
 	}
 	
@@ -30,7 +34,11 @@ class Settings {
 		
 		if ( in_array( $id , self::$loaded )  ) {
 			self::$loaded[$id]	= $data;
-			$setting->data		= $data;
+			if ( $encrypt ) {
+				$setting->encrypted	= $data;
+			} else {
+				$setting->encoded	= $data;
+			}
 		}
 		
 		return $setting->save();
