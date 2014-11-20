@@ -32,3 +32,8 @@ $initialMemory = 'Initial ' . formatBytes( $initialMemory ) . " bytes";
  * Microthread core configuration
  */
 require( PATH . 'vendor/Microthread/bootstrap.php' );
+
+
+$handler = new Microthread\BoardSession();
+session_set_save_handler( $handler, true );
+session_start();
