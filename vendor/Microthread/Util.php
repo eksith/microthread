@@ -160,6 +160,18 @@ class Util {
 	}
 	
 	/**
+	 * URL friendly slug
+	 */
+	public static function slug( $txt ) {
+		$txt = \Normalizer::normalize( $txt, Normalizer::FORM_C );
+		$txt = mb_strtolower( trim( $txt ) );
+		$txt = preg_replace('/^[\p{L}\p{N}]/', '-', $txt );
+		$txt = preg_replace( '/-+/', "-", $txt );
+		
+		return rtrim( $txt, '-' );
+	}
+	
+	/**
 	 * Formatting
 	 */
 	public static function detectEncoding( $str ) {
