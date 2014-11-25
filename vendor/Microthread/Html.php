@@ -173,7 +173,7 @@ final class Html {
 	 * 
 	 * @param $val string Value to encode to entities
 	 */
-	public function escapeCode( $val ) {
+	public static function escapeCode( $val ) {
 		if ( is_array( $val ) ) {
 			$out = self::entities( $val[1], true );
 			return '<code>' . $out . '</code>';
@@ -207,7 +207,7 @@ final class Html {
 		$out = preg_replace( '~<br\s*/?>(\s*</p>)+~', '<p></p>', $out );
 		$out = preg_replace( '~<p>(\s*<p>)+~', '<p>', $out );
 		$out = preg_replace( '~</p>(\s*</p>)+~', '</p>', $out );
-		return  $out;
+		return  '<body>' . $out . '</body>';
 	}
 	
 	/**
@@ -225,7 +225,7 @@ final class Html {
 		 * they will get stripped
 		 */
 		$out = preg_replace_callback( 
-				'/\<code\>(.*)\<\/code\>/imu', 
+				'/\<code\>(.+?)\<\/code\>/ims',
 				"self::escapeCode", 
 				$val
 			);
