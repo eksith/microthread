@@ -86,7 +86,7 @@ final class Html {
 		'show-body-only'		=> true,
 		
 		// Removing empty lines saves storage
-		//'vertical-space'		=> false,
+		'vertical-space'		=> false,
 		
 		// Wrapping tags not needed (saves bandwidth)
 		'wrap'			=> 0
@@ -173,7 +173,7 @@ final class Html {
 	 * 
 	 * @param $val string Value to encode to entities
 	 */
-	protected function escapeCode( $val ) {
+	public function escapeCode( $val ) {
 		if ( is_array( $val ) ) {
 			$out = self::entities( $val[1], true );
 			return '<code>' . $out . '</code>';
@@ -198,7 +198,7 @@ final class Html {
 		 * Turn consecutive <br>s to paragraph breaks and wrap the 
 		 * whole thing in a paragraph
 		 */
-		$out = '<p>' . preg_replace('~(?:<br\s*/?>\s*?){2,}~', '<p></p><p>', $val ) . '</p>';
+		$out = '<p>' . preg_replace('~(?:<br\s*/?>\s*?){2,}~', '<p></p><p>', $out ) . '</p>';
 		
 		/**
 		 * Remove <br> abnormalities
@@ -207,7 +207,7 @@ final class Html {
 		$out = preg_replace( '~<br\s*/?>(\s*</p>)+~', '<p></p>', $out );
 		$out = preg_replace( '~<p>(\s*<p>)+~', '<p>', $out );
 		$out = preg_replace( '~</p>(\s*</p>)+~', '</p>', $out );
-		return $out;
+		return  $out;
 	}
 	
 	/**
@@ -225,7 +225,7 @@ final class Html {
 		 * they will get stripped
 		 */
 		$out = preg_replace_callback( 
-				"/\<code\>(.*)\<\/code\>/imu", 
+				'/\<code\>(.*)\<\/code\>/imu', 
 				"self::escapeCode", 
 				$val
 			);
@@ -234,8 +234,6 @@ final class Html {
 		 */
 		$out	= $this->makeParagraphs( $out );
 		$errors = array();
-		
-		
 		/**
 		 * Hide parse warnings since we'll be cleaning the output anyway
 		 */
@@ -244,7 +242,7 @@ final class Html {
 		
 		if ( $dom->loadHTML( tidy_repair_string( $out, self::$tidy ) ) ) { 
 			$dom->encoding = 'utf-8';
-			$out	= $this->parse( $dom );
+			$out = $this->parse( $dom );
 		} else {
 			$xml	= explode( PHP_EOL, $out );
 			foreach( libxml_get_errors() as $e ) {
@@ -257,7 +255,6 @@ final class Html {
 		 */
 		libxml_clear_errors();
 		libxml_use_internal_errors( $err );
-		
 		/**
 		 * These may be added by users as well.
 		 */
@@ -274,7 +271,6 @@ final class Html {
 		 * Clean body only (rest gets filtered)
 		 */
 		$body	= $dom->getElementsByTagName( 'body' )->item( 0 );
-		
 		if ( !$body->nodeName ) {
 			/**
 			 * Someone got creative with their XSS. Kill everything.
@@ -296,7 +292,7 @@ final class Html {
 		/**
 		 * Filter the junk and return only the contents of the body tag
 		 */
-		return $dom->saveHTML( $body ); //$this->postClean( $dom->saveHTML( $body ) );
+		return $this->postClean( $dom->saveHTML( $body ) );
 	}
 	
 	/**
