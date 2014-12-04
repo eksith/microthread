@@ -1,11 +1,10 @@
 <?php
 /**
  * Queuing for time consuming operations after content has been sent to the user
- * 
+ *
  * @author Eksith Rodrigo <reksith at gmail.com>
  * @license http://opensource.org/licenses/ISC ISC License
  * @version 0.1
- */
  */
 namespace Microthread;
 
@@ -41,6 +40,7 @@ class Queue {
 			$call = array_shift( $args );
 			call_user_func_array( $call, $args );
 		}
+		// Testing:
 		//echo 'True execution ' . round( microtime( true ) + START, 4 );
 	}
 	
