@@ -137,7 +137,7 @@ final class uCrypt {
 				
 		$key	= \hash_pbkdf2( $algo, $txt, $salt, $rounds, $kl );
 		$out	= array(
-				$algo, $txt, $salt, $rounds, $kl, $key
+				$algo, $salt, $rounds, $kl, $key
 			);
 		return base64_encode( implode( self::PBK_DELIMETER, $out ) );
 	}
@@ -155,7 +155,7 @@ final class uCrypt {
 		if ( empty( $k ) || empty( $txt ) ) {
 			return false;
 		}
-		if ( count( $k ) != 6 ) {
+		if ( count( $k ) != 5 ) {
 			return false;
 		}
 		if ( !in_array( $k[0], hash_algos() , true ) ) {
@@ -163,9 +163,9 @@ final class uCrypt {
 		}
 		
 		$pbk = \hash_pbkdf2( $k[0], $txt, 
-				( int ) $k[2], $k[3], $k[4] );
+				( int ) $k[1], $k[2], $k[3] );
 		
-		return \hash_equals( $this->cleanPbk( $k[5] ), $pbk );
+		return \hash_equals( $this->cleanPbk( $k[4] ), $pbk );
 	}
 	
 	private function cleanPbk( $hash ) {
